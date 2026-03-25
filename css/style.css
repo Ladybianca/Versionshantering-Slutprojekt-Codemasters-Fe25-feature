@@ -235,3 +235,41 @@ button:hover {
 .dark-mode .username-prompt-toggle {
   color: #a5b4fc;
 }
+
+.link-container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* make translate fit navbar */
+#google_translate_element {
+  display: flex;
+  align-items: center;
+}
+
+/* style dropdown like nav button */
+.goog-te-gadget select {
+  appearance: none;
+  -webkit-appearance: none;
+
+  background: transparent;
+  color: white;
+
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* remove Google junk text */
+.goog-te-gadget span,
+.goog-logo-link {
+  display: none !important;
+}
+
+
+
+
+.goog-te-gadget span {
+  display: none !important;
+}
