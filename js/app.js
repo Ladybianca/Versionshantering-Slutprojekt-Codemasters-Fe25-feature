@@ -129,8 +129,6 @@ themeToggle.addEventListener("click", function () {
   }
 });
 
-
-loadMessages();
 applySavedTheme();
-initUsernamePrompt();
+
 
