@@ -2,6 +2,7 @@ import { db, firestore, saveToFirestore, getFromFirestore, listenFirestore } fro
 import { ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { initUsernamePrompt, getUsername } from "./username.js";
 import { likeMessage } from "./likeMessages.js";
+import { deleteMessage } from "./deleteMessages.js";
 // ADAM FEATURE: weather sidebar next to messages
 import "./adam-feature.js";
 
@@ -43,7 +44,7 @@ function renderMessages(data) {
 
   messagesContainer.innerHTML = "";
 
-  const entries = Object.values(data || {});
+  const entries = data;
 
   const filteredEntries = entries.filter((msg) => {
     const category = normalizeCategory(msg.category);
@@ -64,9 +65,9 @@ function renderMessages(data) {
     const messageDate = msg.createdAt || msg.timestamp || Date.now();
     const div = document.createElement("div");
     div.className = `message-card ${categoryInfo.className}`;
-
     const currentUser = getUsername();
-    const hasLiked = msg.id && currentUser && msg.likesByUsers?.[currentUser];
+    const isLoggedIn = currentUser === `${currentUser}`; 
+    const hasLiked = msg.likesByUsers && msg.likesByUsers[currentUser];
 
     div.innerHTML = `
       <span class="message-category-badge">${categoryInfo.label}</span>
@@ -79,20 +80,29 @@ function renderMessages(data) {
           </svg>
           <span class="like-count">${msg.likes || 0}</span>
         </button>
+        <button class="delete-btn" title="Ta bort" style="display: ${msg.owner === currentUser ? 'inline-flex' : 'none'}">
+          <svg class="trash-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+          
         <small>${new Date(messageDate).toLocaleString("sv-SE")}</small>
       </div>
     `;
-  
-    div.querySelector(".like-btn").onclick = (event) => {
-        event.preventDefault();
-        const user = getUsername(); 
-        
-        if (!user) {
-            return alert("Logga in för att gilla!");
-        }
 
-        console.log("Gillar meddelande:", msg.id, "som användare:", user);
-        likeMessage(msg.id, user); 
+    const dltBtn = div.querySelector(".delete-btn");
+      if (dltBtn && dltBtn.style.display !== "none") {
+          dltBtn.onclick = (event) => {
+              event.stopPropagation();
+              deleteMessage(msg.id);
+          };
+      }
+
+    div.querySelector(".like-btn").onclick = (event) => {
+      event.preventDefault();
+      if (!currentUser) return alert("Logga in för att gilla!");
+      likeMessage(msg.id, currentUser);
     };
 
     messagesContainer.appendChild(div);
@@ -105,9 +115,11 @@ function renderMessages(data) {
 
 function saveMessage(name, message, category) {
   const messagesRef = ref(db, "messages");
+  const currentUser = getUsername();
 
   push(messagesRef, {
     name: name,
+    owner: currentUser,
     message: message,
     category: normalizeCategory(category),
     createdAt: new Date().toISOString()
@@ -119,18 +131,18 @@ function loadMessages() {
 
   onValue(messagesRef, (snapshot) => {
     const data = snapshot.val();
-    messagesCache = data || {};
+    
+    if (!data) {
+      messagesCache = {};
+      messagesContainer.innerHTML = "<p>Inga meddelanden ännu</p>";
+      return;
+    }
 
     const messagesWithIds = Object.entries(data).map(([id, msg]) => {
       return { ...msg, id: id };
     });
 
     messagesCache = messagesWithIds;
-
-    if (!data) {
-      messagesContainer.innerHTML = "<p>Inga meddelanden ännu</p>";
-      return;
-    }
 
     renderMessages(messagesCache);
   });
